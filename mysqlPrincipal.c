@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-void menu_principal()
+void menu_principal(void)
 {
 printf( "                                                                                                                                 ,----,                                       \n");
 printf( "                                                 ,----..                ____                                                   ,/   .`|     ,----..                           \n");
