@@ -11,9 +11,9 @@ int main(void) {
     
     // Datos de conexión a la base de datos
     char *server = "localhost";
-    char *user = "ict23amn";
-    char *passwd = "258927";
-    char *db = "ict23amn";
+    char *user = "";
+    char *passwd = "";
+    char *db = "";
 
     mysql_init(&mysql);
     if(!mysql_real_connect(&mysql, server, user, passwd, db, 0, NULL, 0)) {
