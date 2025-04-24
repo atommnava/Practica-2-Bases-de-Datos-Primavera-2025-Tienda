@@ -74,9 +74,9 @@ int main(void) {
     
     // Datos de conexión a la base de datos
     char *server = "localhost";
-    char *user = "ict23amn";
-    char *passwd = "258927";
-    char *db = "ict23amn";
+    char *user = "";
+    char *passwd = "";
+    char *db = "";
 
     mysql_init(&mysql);
     if(!mysql_real_connect(&mysql, server, user, passwd, db, 0, NULL, 0)) {
@@ -96,7 +96,7 @@ int main(void) {
             case 1:
                 // Clientes que más han comprado
                 // (Contar número de compras por cliente)
-                strcpy(query, "SELECT idCliente, nombre, apellido, COUNT(idCompra) AS total_compras FROM clientes_p1 LEFT JOIN compras_p1 USING(idCliente) GROUP BY idCliente ORDER BY total_compras DESC;");
+                    strcpy(query, "SELECT idCliente, nombre, apellido, COUNT(idCompra) AS total_compras FROM clientes_p1 LEFT JOIN compras_p1 USING(idCliente) GROUP BY idCliente ORDER BY total_compras DESC;");
                 break;
             case 2:
                 {
@@ -109,10 +109,10 @@ int main(void) {
                     getchar();
                     printf("Ingrese el mes (formato YYYY-MM): ");
                     fgets(mes, sizeof(mes), stdin);
-                    mes[strcspn(mes, "\n")] = 0; // Quitar salto de línea
+                    mes[strcspn(mes, "\n")] = 0; // Quitar \n
 
                     snprintf(query, sizeof(query),
-                        "SELECT idCliente, nombre, apellido, SUM(total) AS fact_total FROM clientes_p1 " 
+                            "SELECT idCliente, nombre, apellido, SUM(total) AS fact_total FROM clientes_p1 " 
                         "JOIN compras_p1 USING(idCliente) WHERE idCliente = %d " 
                         "AND DATE_FORMAT(fecha, '%%Y-%%m') = '%s' GROUP BY idCliente;", idCliente, mes);
                 }
@@ -130,41 +130,54 @@ int main(void) {
                     getchar();
                     snprintf(query, sizeof(query),
                         "SELECT idCliente, nombre, apellido, SUM(total) AS total_gastado FROM clientes_p1 " 
-                        "JOIN compras_p1 USING(idCliente) GROUP BY idCliente "
+                            "JOIN compras_p1 USING(idCliente) GROUP BY idCliente "
                         "HAVING total_gastado > %.2lf ORDER BY total_gastado DESC;", monto);
                 
                 }
                 break;
             case 5:
                 // Lista de cada compra, nombre del cliente, número de productos y descripción de cada uno
-                strcpy(query, "SELECT idCompra, nombre, apellido, SUM(cantidad) AS num_productos, descripcion FROM compras_p1 JOIN clientes_p1 USING(idCliente) JOIN detalle_compras_p1 USING(idCompra) JOIN productos_p1 USING(idCompra) GROUP BY idCompra, nombre, apellido, descripcion;");
+                  strcpy(query, "SELECT co.idCompra, c.nombre, c.apellido, COUNT(dc.idDetalle) AS num_productos, GROUP_CONCAT(p.descripcion SEPARATOR '; ') AS productos "
+                                        "FROM compras_p1 co "
+                               "JOIN clientes_p1 c ON co.idCliente = c.idCliente "
+                                    "JOIN detalle_compras_p1 dc ON co.idCompra = dc.idCompra "
+                                        "JOIN productos_p1 p ON dc.idProducto = p.idProducto "
+                                    "GROUP BY co.idCompra;");
                 break;
             case 6:
                 // Lista de asesores que han resuelto los problemas satisfactoriamente.
-                strcpy(query, "SELECT DISTINCT idAsesor, nombre, correo FROM asesores_p1 JOIN tickets USING(idAsesor) WHERE estado = 'Resuelto';");
+                strcpy(query, "SELECT DISTINCT a.idAsesor, a.nombre, a.correo "
+                               "FROM asesores_p1 a JOIN tickets_p1 t ON a.idAsesor = t.idAsesor "
+                               "WHERE t.estado = 'Resuelto';");
                 break;
             case 7:
                 // Lista de asesores que tienen todavía casos abiertos.
-                strcpy(query, "SELECT DISTINCT idAsesor, nombre, correo FROM asesores_p1 JOIN tickets USING(idAsesor) WHERE estado = 'Pendiente';");
+                strcpy(query, "SELECT DISTINCT a.idAsesor, a.nombre, a.correo "
+                               "FROM asesores_p1 a JOIN tickets_p1 t ON a.idAsesor = t.idAsesor "
+                               "WHERE t.estado = 'Pendiente';");
                 break;
             case 8:
                 {
                     // Lista de todos los productos de una categoría en particular,
                     // mostrando nombre, descripción y comentarios (si existen) de clientes
-                    int idCategoria;
+                     int idCategoria;
                     printf("Ingrese el ID de la categoría: ");
                     scanf("%d", &idCategoria);
                     getchar();
                     snprintf(query, sizeof(query),
-                        "SELECT p.idProducto, p.nombre, p.descripcion, IFNULL(GROUP_CONCAT(t.descripcion SEPARATOR '; '), 'Vacio .-.') AS comentarios "
-                        "FROM productos_p1 p LEFT JOIN tickets_p1 t ON p.idProducto = t.idTicket " 
-                        "WHERE p.idCategoria = %d "
+                        "SELECT p.idProducto, p.nombre, p.descripcion, IFNULL(GROUP_CONCAT(t.descripcion SEPARATOR '; '), 'Sin comentarios') AS comentarios "
+                        "FROM productos_p1 p LEFT JOIN tickets_p1 t ON p.idProducto = t.idTicket " // Nota: ajusta esta relación según tu modelo de datos real
+                            "WHERE p.idCategoria = %d "
                         "GROUP BY p.idProducto;", idCategoria);
                 }
                 break;
             case 9:
                 // Número de cancelaciones y devoluciones, y producto más devuelto
-                strcpy(query, "SELECT COUNT(*) AS total_devoluciones, SUM(CASE WHEN estado = 'Aprobada' THEN 1 ELSE 0 END) AS devoluciones_aprobadas, SUM(CASE WHEN estado = 'Rechazada' THEN 1 ELSE 0 END) AS devoluciones_rechazadas, SUM(CASE WHEN estado = 'Pendiente' THEN 1 ELSE 0 END) AS devoluciones_pendientes FROM devoluciones_p1;");
+                strcpy(query, "SELECT nombre, COUNT(idDevolucion) AS total_devoluciones "
+                               "FROM devoluciones_p1 "
+                               "JOIN detalle_compras_p1 USING(idDetalle) "
+                               "JOIN productos_p1 USING(idProducto) "
+                               "GROUP BY idProducto ORDER BY total_devoluciones DESC;");
                 break;
             case 10:
                 // Lista de los clientes con su información completa para entrega
@@ -187,7 +200,7 @@ int main(void) {
         fgets(buffer, sizeof(buffer), stdin);
     } while(1); // Equivalente a while True en Java
 
-    // Cierre de conexión (nunca alcanzado en este ejemplo)
+    // Cierre de conexión 
     mysql_close(&mysql);
     return 0;
 }
