@@ -13,9 +13,9 @@ int main (int argc, char **argv)
 	// del usuario que se conectará
 	
     char *server = "localhost";
-    char *user = "ict23amn";
-    char *passwd = "258927";
-    char *db = "ict23amn";
+    char *user = "";
+    char *passwd = "";
+    char *db = "";
 
     char nombre[10];
     char apellido[10];
